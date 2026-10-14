@@ -127,3 +127,8 @@ claude mcp add --scope user gtm -- $PWD/_build/prod/rel/gtm_mcp/bin/gtm_mcp star
 ```sh
 mix test --no-start
 ```
+
+## Licencia
+
+[MIT](LICENSE). Las dependencias conservan sus propias licencias
+(por ejemplo, `anubis_mcp` es LGPL-3.0).
