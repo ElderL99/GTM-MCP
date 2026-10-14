@@ -47,42 +47,66 @@ El servidor tiene dos modos de transporte:
 | `gtm_list_versions` | `account_id`, `container_id` |
 | `gtm_get_version` | `account_id`, `container_id`, `version_id` o `"live"` |
 
-## Requisitos
+## Cómo levantarlo
 
-- Elixir 1.20+ / Erlang OTP 29+
-- Una cuenta de servicio de Google Cloud con la Tag Manager API activada,
-  agregada como usuario (lectura) en los contenedores de GTM.
+### Paso 1 · Instalar Elixir
 
-## Instalación
+Se necesita Elixir 1.20+ con Erlang/OTP 29+. En macOS:
 
 ```sh
+brew install elixir
+elixir --version
+```
+
+### Paso 2 · Descargar y compilar el proyecto
+
+```sh
+git clone https://github.com/ElderL99/GTM-MCP.git
+cd GTM-MCP
 mix deps.get
 MIX_ENV=prod mix release
 ```
 
-Guarda la llave JSON de la cuenta de servicio en
-`~/.config/gtm-mcp/service-account.json` (o indica otra ruta con
-`GTM_CREDENTIALS`) y protégela con `chmod 600`.
+El ejecutable queda en `_build/prod/rel/gtm_mcp/bin/gtm_mcp`.
 
-Sin la llave el servidor arranca igual; las herramientas de GTM responden
-con un error indicando que falta.
+### Paso 3 · Conseguir la llave de Google
 
-## Uso en modo stdio
+1. En Google Cloud Console, crea (o elige) un proyecto y activa la
+   **Tag Manager API**.
+2. Crea una **cuenta de servicio** y descarga su llave en formato JSON.
+3. En Google Tag Manager, agrega el correo de la cuenta de servicio
+   (`...@...iam.gserviceaccount.com`) como usuario de los contenedores,
+   con permiso de **lectura**.
+4. Guarda la llave y protégela:
+
+   ```sh
+   mkdir -p ~/.config/gtm-mcp
+   mv ~/Downloads/<llave>.json ~/.config/gtm-mcp/service-account.json
+   chmod 600 ~/.config/gtm-mcp/service-account.json
+   ```
+
+Sin la llave el servidor arranca igual, pero las herramientas de GTM
+responden con un error indicando que falta.
+
+### Paso 4 · Elegir el modo y arrancarlo
+
+**Opción A · stdio (un agente en la misma máquina).** No hay que arrancar
+nada a mano: el agente lanza el servidor cuando lo necesita. Con Claude Code:
 
 ```sh
 claude mcp add --scope user gtm -- $PWD/_build/prod/rel/gtm_mcp/bin/gtm_mcp start
 ```
 
-## Uso en modo HTTP con API keys
+**Opción B · HTTP (cualquier agente, con API keys).**
 
-1. Levanta el servidor:
+1. Arranca el servidor y déjalo corriendo:
 
    ```sh
    GTM_TRANSPORT=http _build/prod/rel/gtm_mcp/bin/gtm_mcp start
    ```
 
-2. Crea una key por agente en la UI local **http://gtm.localhost:4101**, o
-   desde la terminal:
+2. Abre la UI local **http://gtm.localhost:4101** y crea una key por agente.
+   También se puede desde la terminal:
 
    ```sh
    mix gtm.keys create cursor
@@ -100,6 +124,22 @@ claude mcp add --scope user gtm -- $PWD/_build/prod/rel/gtm_mcp/bin/gtm_mcp star
    claude mcp add --transport http gtm-http http://127.0.0.1:4100/mcp \
      --header "Authorization: Bearer gtm_..."
    ```
+
+### Paso 5 · Verificar que funciona
+
+1. En Claude Code, escribe `/mcp`: el servidor debe aparecer como conectado.
+2. Pide al agente: *"lista mis cuentas de GTM"*. Si responde con tus
+   cuentas, todo está listo.
+3. Si responde `falta la llave de Google`, revisa el paso 3. Si responde
+   `GTM API 403`, la cuenta de servicio no tiene acceso al contenedor en GTM.
+
+### Si cambias el código
+
+Vuelve a compilar el ejecutable para que los agentes usen la versión nueva:
+
+```sh
+MIX_ENV=prod mix release --overwrite
+```
 
 ## Configuración
 
